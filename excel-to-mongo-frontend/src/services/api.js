@@ -17,11 +17,22 @@ export const uploadFile = async (formData, mongoURI) => {
   }
 };
 
+// export const fetchUserFiles = async (mongoURI) => {
+//   try {
+//     const response = await axios.get(`${API_URL}/fetch`, {
+//       params: { mongoURI },
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error("Failed to fetch user files:", error);
+//     throw error;
+//   }
+// };
+
 export const fetchUserFiles = async (mongoURI) => {
   try {
-    const response = await axios.get(`${API_URL}/fetch`, {
-      params: { mongoURI },
-    });
+    const encodedURI = encodeURIComponent(mongoURI); // Ensure safe URI encoding
+    const response = await axios.get(`${API_URL}/fetch?mongoURI=${encodedURI}`);
     return response.data;
   } catch (error) {
     console.error("Failed to fetch user files:", error);
