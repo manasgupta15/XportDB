@@ -7,7 +7,7 @@ const fileRoutes = require("./routes/fileRoutes");
 const app = express();
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL, // Dynamically load frontend URL
+    origin: "*", // Allow all origins (only for debugging)
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type"],
   })
