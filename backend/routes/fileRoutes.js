@@ -157,9 +157,12 @@ router.get("/fetch", async (req, res) => {
       .asPromise();
 
     const FileModel = createFileModel(customDB);
-    const files = await FileModel.find({}, "_id fileName createdAt").maxTimeMS(
-      3000
-    );
+    // const files = await FileModel.find({}, "_id fileName createdAt").maxTimeMS(
+    //   3000
+    // );
+    const files = await FileModel.find({}, "_id fileName createdAt")
+      .maxTimeMS(2000) // Fail fast if query takes too long
+      .lean();
 
     // Close connection after use
     setTimeout(() => customDB.close(), 5000); // Close after 5 sec

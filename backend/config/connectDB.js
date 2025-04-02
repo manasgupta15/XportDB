@@ -24,45 +24,37 @@
 
 // module.exports = connectDB;
 
-const mongoose = require("mongoose");
-
-const connections = {}; // Store multiple connections
+const connectionPool = new Map();
 
 const connectDB = async (mongoURI) => {
-  if (!mongoURI) throw new Error("MongoDB URI is required.");
+  if (!mongoURI) throw new Error("MongoDB URI required");
 
-  if (connections[mongoURI]) {
-    console.log("Reusing existing database connection.");
-    return connections[mongoURI];
+  // Return existing connection if available
+  if (connectionPool.has(mongoURI)) {
+    const conn = connectionPool.get(mongoURI);
+    if (conn.readyState === 1) return conn; // Connected
+    connectionPool.delete(mongoURI); // Remove dead connection
   }
 
-  try {
-    const connection = await mongoose
-      .createConnection(mongoURI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 3000,
-        connectTimeoutMS: 3000,
-        socketTimeoutMS: 3000,
-        maxPoolSize: 5, // Limit connections
-        minPoolSize: 1,
-        retryWrites: true,
-        retryReads: true,
-      })
-      .asPromise();
-    const connection = await mongoose.createConnection(mongoURI, {
+  // Create new connection with aggressive timeouts
+  const connection = await mongoose
+    .createConnection(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000, // Prevents infinite waiting
-    });
+      connectTimeoutMS: 2000,
+      socketTimeoutMS: 2000,
+      serverSelectionTimeoutMS: 2000,
+      maxPoolSize: 5,
+      minPoolSize: 1,
+    })
+    .asPromise();
 
-    connections[mongoURI] = connection;
-    console.log(`Connected to database: ${mongoURI}`);
-    return connection;
-  } catch (error) {
-    console.error("Database connection error:", error.message);
-    throw new Error("Failed to connect to database.");
-  }
+  // Store in pool
+  connectionPool.set(mongoURI, connection);
+
+  // Clean up dead connections
+  connection.on("error", () => connectionPool.delete(mongoURI));
+  connection.on("disconnected", () => connectionPool.delete(mongoURI));
+
+  return connection;
 };
-
-module.exports = connectDB;
