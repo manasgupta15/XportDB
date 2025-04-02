@@ -105,6 +105,35 @@ router.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+// router.get("/fetch", async (req, res) => {
+//   try {
+//     const { mongoURI } = req.query;
+
+//     if (!mongoURI) {
+//       return res.status(400).json({ error: "MongoDB URI is required" });
+//     }
+
+//     // Establish a dynamic connection
+//     const customDB = await mongoose
+//       .createConnection(mongoURI, {
+//         useNewUrlParser: true,
+//         useUnifiedTopology: true,
+//       })
+//       .asPromise();
+
+//     // Create the model dynamically
+//     const FileModel = createFileModel(customDB);
+
+//     // Fetch only required fields
+//     const files = await FileModel.find({}, "_id fileName createdAt");
+
+//     res.status(200).json(files);
+//   } catch (error) {
+//     console.error("Fetch Error:", error);
+//     res.status(500).json({ error: "Fetch failed" });
+//   }
+// });
+
 router.get("/fetch", async (req, res) => {
   try {
     const { mongoURI } = req.query;
@@ -113,23 +142,34 @@ router.get("/fetch", async (req, res) => {
       return res.status(400).json({ error: "MongoDB URI is required" });
     }
 
-    // Establish a dynamic connection
+    // Set timeout headers for Vercel
+    res.setHeader("Cache-Control", "s-maxage=1, stale-while-revalidate");
+
+    // Fast connection setup with aggressive timeouts
     const customDB = await mongoose
       .createConnection(mongoURI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        connectTimeoutMS: 3000, // 3 seconds
+        socketTimeoutMS: 3000, // 3 seconds
+        serverSelectionTimeoutMS: 3000,
       })
       .asPromise();
 
-    // Create the model dynamically
     const FileModel = createFileModel(customDB);
+    const files = await FileModel.find({}, "_id fileName createdAt").maxTimeMS(
+      3000
+    );
 
-    // Fetch only required fields
-    const files = await FileModel.find({}, "_id fileName createdAt");
+    // Close connection after use
+    setTimeout(() => customDB.close(), 5000); // Close after 5 sec
 
     res.status(200).json(files);
   } catch (error) {
     console.error("Fetch Error:", error);
+    if (error.message.includes("timeout")) {
+      return res.status(504).json({ error: "Database operation timed out" });
+    }
     res.status(500).json({ error: "Fetch failed" });
   }
 });

@@ -37,6 +37,19 @@ const connectDB = async (mongoURI) => {
   }
 
   try {
+    const connection = await mongoose
+      .createConnection(mongoURI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 3000,
+        connectTimeoutMS: 3000,
+        socketTimeoutMS: 3000,
+        maxPoolSize: 5, // Limit connections
+        minPoolSize: 1,
+        retryWrites: true,
+        retryReads: true,
+      })
+      .asPromise();
     const connection = await mongoose.createConnection(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,

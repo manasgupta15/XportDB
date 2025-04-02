@@ -29,12 +29,31 @@ export const uploadFile = async (formData, mongoURI) => {
 //   }
 // };
 
+// export const fetchUserFiles = async (mongoURI) => {
+//   try {
+//     const encodedURI = encodeURIComponent(mongoURI); // Ensure safe URI encoding
+//     const response = await axios.get(`${API_URL}/fetch?mongoURI=${encodedURI}`);
+//     return response.data;
+//   } catch (error) {
+//     console.error("Failed to fetch user files:", error);
+//     throw error;
+//   }
+// };
+
 export const fetchUserFiles = async (mongoURI) => {
   try {
-    const encodedURI = encodeURIComponent(mongoURI); // Ensure safe URI encoding
-    const response = await axios.get(`${API_URL}/fetch?mongoURI=${encodedURI}`);
+    const encodedURI = encodeURIComponent(mongoURI);
+    const response = await axios.get(
+      `${API_URL}/fetch?mongoURI=${encodedURI}`,
+      {
+        timeout: 8000, // Frontend timeout (8 seconds)
+      }
+    );
     return response.data;
   } catch (error) {
+    if (error.code === "ECONNABORTED") {
+      throw new Error("Request timed out - please try again");
+    }
     console.error("Failed to fetch user files:", error);
     throw error;
   }
