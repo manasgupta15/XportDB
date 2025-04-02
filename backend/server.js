@@ -5,7 +5,13 @@ const connectDB = require("./config/db");
 const fileRoutes = require("./routes/fileRoutes");
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL, // Dynamically load frontend URL
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 app.use(express.json());
 
 connectDB();
